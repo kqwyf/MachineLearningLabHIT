@@ -43,7 +43,11 @@ def read_data(filename):
             line = line.strip().replace('?', '0').split(',')
             x += [np.array(line[:-1], dtype=np.int)]
             y += [int(line[-1])]
-    return len(x[0]), (np.array(x), np.array(y))
+    N = len(x)
+    N1 = int(0.7 * N)
+    N2 = N - N1
+    x, y = np.array(x), np.array(y)
+    return len(x[0]), (x[:N1], y[:N1]), (x[N1:], y[N1:])
 
 def accuracy(model, dataset):
     return np.sum(model.predict(dataset[0]) == dataset[1]) / len(dataset[1])
@@ -77,7 +81,7 @@ print("")
 print("train set:")
 train_set = generate_dataset(M, N, N, independent=True, same_covariance=False)
 print("")
-real_M, real_set = read_data(dataset_file)
+real_M, real_set, real_validate_set = read_data(dataset_file)
 
 ##########################################
 
@@ -90,11 +94,27 @@ print("")
 
 ##########################################
 
+print("10-D generated dataset test (not regularized).")
+model = logistic_model(M, l=0)
+model.train_by_newton(train_set, num_step=10)
+print("Accuracy: %.3f"%accuracy(model, train_set))
+print("")
+
+##########################################
+
 print("2-D generated dataset test (regularized).")
 model = logistic_model(2, l=1e-3)
 model.train_by_newton(train_set_2d, num_step=10)
 print("Accuracy: %.3f"%accuracy(model, train_set_2d))
 plot(model, train_set_2d)
+print("")
+
+##########################################
+
+print("10-D generated dataset test (regularized).")
+model = logistic_model(M, l=1e-3)
+model.train_by_newton(train_set, num_step=10)
+print("Accuracy: %.3f"%accuracy(model, train_set))
 print("")
 
 ##########################################
@@ -129,26 +149,10 @@ print("")
 
 ##########################################
 
-print("10-D generated dataset test (not regularized).")
-model = logistic_model(M, l=0)
-model.train_by_newton(train_set, num_step=10)
-print("Accuracy: %.3f"%accuracy(model, train_set))
-print("")
-
-##########################################
-
-print("10-D generated dataset test (regularized).")
-model = logistic_model(M, l=1e-3)
-model.train_by_newton(train_set, num_step=10)
-print("Accuracy: %.3f"%accuracy(model, train_set))
-print("")
-
-##########################################
-
 print("Real dataset test (not regularized). dataset file: " + dataset_file)
 model = logistic_model(real_M, l=0)
 model.train_by_newton(real_set, num_step=10)
-print("Accuracy: %.3f"%accuracy(model, real_set))
+print("Train set accuracy: %.3f    Validate set accuracy: %.3f"%(accuracy(model, real_set), accuracy(model, real_validate_set)))
 print("")
 
 ##########################################
@@ -156,5 +160,5 @@ print("")
 print("Real dataset test (regularized). dataset file: " + dataset_file)
 model = logistic_model(real_M, l=1e-3)
 model.train_by_newton(real_set, num_step=10)
-print("Accuracy: %.3f"%accuracy(model, real_set))
+print("Train set accuracy: %.3f    Validate set accuracy: %.3f"%(accuracy(model, real_set), accuracy(model, real_validate_set)))
 print("")
