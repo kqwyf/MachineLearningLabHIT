@@ -9,8 +9,8 @@ n = 100 # data size of each class
 colors = ['r', 'g', 'b'] # color of each class
 
 # generate points of a specific gaussian distribution
-def generate_points_near(x, y, n, scale=1.0):
-    return np.random.multivariate_normal((x,y), scale*np.eye(2), n)
+def generate_points_near(x, y, n, scale=np.eye(2)):
+    return np.random.multivariate_normal((x,y), scale, n)
 
 # draw a circle in pyplot
 def draw_circle(plt, x, y, r):
@@ -26,8 +26,8 @@ print("generated data:")
 
 # generate data
 means = np.random.randint(-10, 10, (K,2))
-scales = np.random.randint(1, 10, K)
-points = np.vstack([generate_points_near(mean[0], mean[1], n) for mean in means])
+scales = [np.diag(np.random.randint(1, 5, 2)) for _ in range(K)]
+points = np.vstack([generate_points_near(mean[0], mean[1], n, scale) for mean,scale in zip(means, scales)])
 labels = np.hstack([[i]*n for i in range(K)])
 
 # show the generated data
@@ -47,11 +47,13 @@ plt.scatter(means[:,0], means[:,1], c='black') # mean points found by kmeans
 plt.subplot(1,3,3)
 model = GMM(K)
 loc = np.array([np.average(points[labels==i], 0) for i in range(K)]) # initialize by kmeans
-model.train_by_em(points, loc=loc)
+result = model.train_by_em(points, loc=loc)
 labels = model.predict(points)
 for i in range(K):
     plt.scatter(points[labels==i, 0], points[labels==i, 1], c=colors[i])
-    draw_circle(plt, model.loc[i,0], model.loc[i,1], 1/np.linalg.det(model.scale_inv[i]))
+    draw_circle(plt, model.loc[i,0], model.loc[i,1], np.sqrt(1/np.linalg.det(model.scale_inv[i])))
+plt.show()
+plt.plot(range(len(result)), result) # likelihood
 plt.show()
 
 #################################
@@ -72,7 +74,7 @@ with open("seeds.txt", "r") as f:
 # train model
 k = 3
 model = GMM(k)
-model.train_by_em(data)
+result = model.train_by_em(data)
 labels = model.predict(data)
 tmp = np.array([[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]])
 print("accuracy: %.2f"%(max([np.sum(label==tmp[i][labels]) for i in range(6)])/len(data)))
@@ -80,4 +82,6 @@ print("accuracy: %.2f"%(max([np.sum(label==tmp[i][labels]) for i in range(6)])/l
 # show result
 for i in range(k):
     plt.scatter(data[labels==i, 2], data[labels==i, 1], c=colors[i])
+plt.show()
+plt.plot(range(len(result)), result) # likelihood
 plt.show()

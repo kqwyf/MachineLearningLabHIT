@@ -61,6 +61,11 @@ class GMM:
         num_step : int
             Number of iterations. If none, the train process won't stop as long as the likelihood
             change is greater than EPS.
+
+        Returns
+        -------
+        result : array_like
+            The logarithm of likelihood values at each step.
         """
         K = self.K
         X = np.asarray(X)
@@ -87,7 +92,7 @@ class GMM:
                 print("\rtraining step: %d    likelihood: %f"%(step, log_likelihood), end='')
             else:
                 print("\rtraining process: %.0f%%    likelihood: %f"%(step*100//num_step, log_likelihood), end='')
-            result += [loc]
+            result += [log_likelihood]
             # E step
             log_prob = _log_prob(X, loc, scale_inv, log_a) # calculate the log probability
             norm_prob = log_prob - np.log(np.sum(np.exp(log_prob), axis=1))[:,np.newaxis] # normalize
@@ -113,7 +118,9 @@ class GMM:
             if step >= 100: break
             if num_step is not None and step >= num_step:
                 break
-        print("\nTraining finished.    likelihood: %f"%(_log_likelihood(X, loc, scale_inv, log_a)))
+        log_likelihood = _log_likelihood(X, loc, scale_inv, log_a)
+        result += [log_likelihood]
+        print("\nTraining finished.    likelihood: %f"%(log_likelihood))
         # update model
         self.log_a = log_a
         self.loc = loc
